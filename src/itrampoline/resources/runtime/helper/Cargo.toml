@@ -1,0 +1,20 @@
+[package]
+name = "itrampoline-helper"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "itrampoline"
+path = "src/main.rs"
+
+[[test]]
+name = "cleanup"
+path = "tests/cleanup.rs"
+harness = false
+
+[dependencies]
+itrampoline-runtime.workspace = true
+rustix.workspace = true
+libc.workspace = true

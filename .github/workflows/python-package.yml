@@ -1,0 +1,39 @@
+name: Offline tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group tests --no-default-groups --python "${{ matrix.python-version }}"
+      - run: uv run --no-sync pytest
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: armv7-unknown-linux-musleabihf
+      - name: Test Rust runtime
+        working-directory: src/itrampoline/resources/runtime
+        run: cargo test --locked --workspace
+      - name: Build ARM helper
+        working-directory: src/itrampoline/resources/runtime
+        env:
+          RUSTFLAGS: -C linker=rust-lld -C link-self-contained=yes -C target-feature=+crt-static
+        run: cargo build --locked --release --target armv7-unknown-linux-musleabihf -p itrampoline-helper
+      - name: Build ARM core
+        working-directory: src/itrampoline/resources/runtime
+        env:
+          RUSTFLAGS: -C linker=rust-lld -C link-self-contained=no -C target-feature=-crt-static
+        run: cargo build --locked --release --target armv7-unknown-linux-musleabihf -p itrampoline-core

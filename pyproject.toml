@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "itrampoline"
+version = "0.1.0"
+description = "Install a minimal Rust libretro trampoline through an existing stock SD catalogue"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+
+[project.scripts]
+itrampoline = "itrampoline.cli:main"
+
+[dependency-groups]
+dev = [{include-group = "tests"}, "ruff>=0.12,<1"]
+tests = ["pytest>=8,<10"]
+
+[tool.hatch.build]
+exclude = [".venv*", "__pycache__", ".pytest_cache", ".ruff_cache", "target", "*.pyc", "uv.lock", "dist"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/itrampoline"]
+exclude = ["src/itrampoline/resources/runtime/**/tests/**", "src/itrampoline/resources/runtime/**/examples/**"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/itrampoline", "tests", "docs", ".github", "README.md", "AGENTS.md", "IDLE.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--import-mode=importlib", "--strict-config", "--strict-markers"]
+
+[tool.ruff]
+line-length = 119
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
