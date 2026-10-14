@@ -16,6 +16,7 @@ MAX_FILE_BYTES = 256 * 1024 * 1024
 
 
 def split_relative(path: str) -> tuple[str, ...]:
+    """Split a relative path and reject empty, parent or NUL-containing components."""
     parts = tuple(path.split("/"))
 
     if not parts or any(not part or part in (".", "..") or "\x00" in part for part in parts):
@@ -25,6 +26,7 @@ def split_relative(path: str) -> tuple[str, ...]:
 
 
 def open_absolute_directory(path: Path) -> int:
+    """Open and return a directory FD without following links; the caller closes it."""
     descriptor = os.open("/", DIRECTORY_FLAGS)
 
     try:
@@ -42,6 +44,7 @@ def open_absolute_directory(path: Path) -> int:
 
 
 def identify(metadata: os.stat_result) -> tuple[int, int]:
+    """Return the device and inode used to detect path replacement."""
     return metadata.st_dev, metadata.st_ino
 
 
@@ -85,6 +88,7 @@ class SDTree:
             self.descriptor = None
 
     def validate_root(self) -> None:
+        """Check that the SD path still names the directory held by this session."""
 
         if self.descriptor is None:
             raise RuntimeError("SDTree is not open")
@@ -101,6 +105,7 @@ class SDTree:
 
     @contextmanager
     def open_parent(self, path: str, *, create: bool = False) -> Iterator[tuple[int, str]]:
+        """Hold a checked parent FD until context exit, optionally creating missing directories."""
         self.validate_root()
         parts = split_relative(path)
         descriptors = [os.dup(self.descriptor)]
@@ -137,6 +142,7 @@ class SDTree:
                 os.close(descriptor)
 
     def capture(self, path: str) -> FileSnapshot | None:
+        """Read a bounded regular file snapshot, or return None when it is absent."""
 
         try:
 
@@ -180,12 +186,14 @@ class SDTree:
             return None
 
     def validate_snapshot(self, path: str, expected: FileSnapshot | None) -> None:
+        """Reject a file whose contents, metadata or presence changed since preflight."""
         current = self.capture(path)
 
         if current != expected:
             raise TrampolineError(f"Destination changed since preflight: {path}")
 
     def validate_parent(self, path: str, descriptor: int) -> None:
+        """Check that a held parent FD still belongs to the requested destination."""
 
         with self.open_parent(path) as (current, _):
 
@@ -193,6 +201,7 @@ class SDTree:
                 raise TrampolineError(f"Parent directory changed before publication: {path}")
 
     def validate_database_idle(self, path: str) -> None:
+        """Reject SQLite sidecar files that indicate an active or unfinished database update."""
 
         for suffix in ("-wal", "-shm", "-journal"):
 

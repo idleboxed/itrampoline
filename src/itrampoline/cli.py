@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def ask_slot() -> CoreSlot:
+    """Ask the user which stock platform core the trampoline may replace."""
     sys.stderr.write(
         "Choose the stock core to replace "
         "(niche platforms first; this is not a measured ranking):\n"
@@ -35,6 +36,7 @@ def ask_slot() -> CoreSlot:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Install the selected trampoline on the mounted SD and return an exit code."""
     parser = argparse.ArgumentParser(
         description="Install a stock-menu trampoline on an existing mounted SD", allow_abbrev=False,
     )

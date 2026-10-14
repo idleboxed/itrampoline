@@ -109,24 +109,33 @@ unsafe fn has_token_path(info: *const GameInfo) -> bool {
 }
 
 #[no_mangle]
+/// Return the libretro ABI version implemented by this core.
 pub extern "C" fn retro_api_version() -> u32 { 1 }
 #[no_mangle]
+/// Retain the launcher's environment callback for capability setup.
 pub extern "C" fn retro_set_environment(callback: Option<Environment>) {
     apply_to_state(|state| state.environment = callback);
 }
 #[no_mangle]
+/// Accept the required libretro callback; this trampoline renders no video.
 pub extern "C" fn retro_set_video_refresh(_: Option<Video>) {}
 #[no_mangle]
+/// Accept the required libretro callback; this trampoline emits no audio samples.
 pub extern "C" fn retro_set_audio_sample(_: Option<Audio>) {}
 #[no_mangle]
+/// Accept the required libretro callback; this trampoline emits no audio batches.
 pub extern "C" fn retro_set_audio_sample_batch(_: Option<AudioBatch>) {}
 #[no_mangle]
+/// Accept the required libretro callback; input remains the launcher's responsibility.
 pub extern "C" fn retro_set_input_poll(_: Option<Poll>) {}
 #[no_mangle]
+/// Accept the required libretro callback; the trampoline does not read gameplay input.
 pub extern "C" fn retro_set_input_state(_: Option<Input>) {}
 #[no_mangle]
+/// Reset the trampoline's loaded and attempted state for a new libretro session.
 pub extern "C" fn retro_init() { apply_to_state(|state| { state.loaded = false; state.attempted = false; }); }
 #[no_mangle]
+/// Mark the token unloaded at the end of a libretro session.
 pub extern "C" fn retro_deinit() { retro_unload_game(); }
 /// # Safety
 /// Output pointer must be writable for a libretro system_info, or null.
@@ -161,10 +170,13 @@ pub unsafe extern "C" fn retro_load_game(info: *const GameInfo) -> bool {
     }).unwrap_or(false)
 }
 #[no_mangle]
+/// Mark the token unloaded so frame callbacks do not attempt a handoff.
 pub extern "C" fn retro_unload_game() { apply_to_state(|state| state.loaded = false); }
 #[no_mangle]
+/// Accept the required reset hook without changing the one-shot launch state.
 pub extern "C" fn retro_reset() {}
 #[no_mangle]
+/// Attempt the prepared helper exec once; do not retry a failed handoff.
 pub extern "C" fn retro_run() {
     apply_to_state(|state| {
         if !state.loaded || state.attempted {
@@ -183,22 +195,32 @@ pub extern "C" fn retro_run() {
     });
 }
 #[no_mangle]
+/// Reject unsupported multi-content libretro loading.
 pub extern "C" fn retro_load_game_special(_: u32, _: *const GameInfo, _: usize) -> bool { false }
 #[no_mangle]
+/// Accept controller-port selection; this core has no gameplay controllers.
 pub extern "C" fn retro_set_controller_port_device(_: u32, _: u32) {}
 #[no_mangle]
+/// Return the required libretro region value for this non-game core.
 pub extern "C" fn retro_get_region() -> u32 { 0 }
 #[no_mangle]
+/// Return zero because the trampoline has no serializable game state.
 pub extern "C" fn retro_serialize_size() -> usize { 0 }
 #[no_mangle]
+/// Reject state serialization; no saved-game state exists.
 pub extern "C" fn retro_serialize(_: *mut c_void, _: usize) -> bool { false }
 #[no_mangle]
+/// Reject state loading; no saved-game state exists.
 pub extern "C" fn retro_unserialize(_: *const c_void, _: usize) -> bool { false }
 #[no_mangle]
+/// Accept the required cheat reset hook without applying cheats.
 pub extern "C" fn retro_cheat_reset() {}
 #[no_mangle]
+/// Accept the required cheat hook without applying cheats.
 pub extern "C" fn retro_cheat_set(_: u32, _: bool, _: *const c_char) {}
 #[no_mangle]
+/// Return no game-memory buffer.
 pub extern "C" fn retro_get_memory_data(_: u32) -> *mut c_void { core::ptr::null_mut() }
 #[no_mangle]
+/// Return zero because this trampoline exposes no game memory.
 pub extern "C" fn retro_get_memory_size(_: u32) -> usize { 0 }

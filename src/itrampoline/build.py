@@ -15,6 +15,7 @@ TARGET = "armv7-unknown-linux-musleabihf"
 
 
 def copy_resources(source: Traversable, destination: Path) -> None:
+    """Copy runtime source resources, leaving out build and test artifacts."""
     destination.mkdir()
 
     for child in source.iterdir():

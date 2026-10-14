@@ -28,6 +28,7 @@ class PlannedFile:
     before: FileSnapshot | None
 
     def should_write(self) -> bool:
+        """Report whether contents or required executable permissions need updating."""
         return self.before is None or self.content != self.before.content or (
             self.path == HELPER_PATH and not self.before.mode & 0o111
         )
@@ -39,6 +40,7 @@ class InstallPlan:
     files: tuple[PlannedFile, ...]
 
     def get_conflicts(self) -> tuple[str, ...]:
+        """List existing core or helper files whose replacement needs approval."""
         return tuple(
             entry.path for entry in self.files
             if entry.path != DATABASE_PATH and entry.before is not None and entry.should_write()
@@ -92,13 +94,16 @@ class InstallSession:
         return self._plan
 
     def get_conflicts(self) -> tuple[str, ...]:
+        """Return the replacement conflicts from this session's checked install plan."""
         return self._get_plan().get_conflicts()
 
     def apply(self, *, backup_root: Path, allow_replace: bool) -> Path | None:
+        """Back up changed files on the PC and publish the plan, with the database last."""
         return apply_install(self._tree, self._get_plan(), backup_root=backup_root, allow_replace=allow_replace)
 
 
 def read_target(token: bytes) -> str:
+    """Decode a bounded token containing one safe relative executable path."""
 
     if not token.endswith(b"\n") or len(token) > 1024:
         raise TrampolineError("Invalid trampoline token: expected a relative executable path and one newline")
@@ -118,6 +123,7 @@ def read_target(token: bytes) -> str:
 
 
 def prepare_install(tree: SDTree, slot: CoreSlot, *, core: bytes, helper: bytes) -> InstallPlan:
+    """Inspect destinations and prepare file contents without modifying the SD."""
     database = tree.capture(DATABASE_PATH)
 
     if database is None:
@@ -147,6 +153,7 @@ def prepare_install(tree: SDTree, slot: CoreSlot, *, core: bytes, helper: bytes)
 
 
 def create_backup(tree: SDTree, plan: InstallPlan, destination: Path) -> Path:
+    """Save original file contents in a new backup directory outside the SD."""
     destination = Path(os.path.abspath(destination))
 
     if destination.is_relative_to(tree.root):
@@ -222,6 +229,7 @@ def create_backup(tree: SDTree, plan: InstallPlan, destination: Path) -> Path:
 
 
 def apply_install(tree: SDTree, plan: InstallPlan, *, backup_root: Path, allow_replace: bool) -> Path | None:
+    """Recheck the plan, back up originals and install files; return the backup path if needed."""
 
     if plan.get_conflicts() and not allow_replace:
         raise TrampolineError("Existing files differ; replacement needs interactive approval")

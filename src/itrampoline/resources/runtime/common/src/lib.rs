@@ -25,6 +25,7 @@ impl From<Errno> for Error {
     }
 }
 
+/// Reject empty, oversized or unsafe relative path components before opening any file.
 pub fn validate_relative(path: &[u8]) -> Result<()> {
     if path.is_empty() || path.len() >= 1024 {
         return Err(Error::Guard("Relative path length"));
@@ -51,6 +52,7 @@ pub struct Volume {
 }
 
 impl Volume {
+    /// Open and hold a checked SD root without following symbolic links.
     pub fn open(path: &CStr) -> Result<Self> {
         let bytes = path.to_bytes().strip_prefix(b"/").ok_or(Error::Guard("Absolute root required"))?;
         validate_relative(bytes)?;
@@ -71,6 +73,7 @@ impl Volume {
         Ok(Self { root: directory, device: metadata.st_dev })
     }
 
+    /// Require the SD root path to retain the held directory's device and inode.
     pub fn validate_path(&self, path: &CStr) -> Result<()> {
         let current = Self::open(path)?;
         let opened = fs::fstat(&self.root)?;
@@ -81,6 +84,7 @@ impl Volume {
         Ok(())
     }
 
+    /// Open a same-device, single-link regular file under the held root; optionally require execution rights.
     pub fn open_file(&self, path: &CStr, executable: bool) -> Result<OwnedFd> {
         let bytes = path.to_bytes();
         validate_relative(bytes)?;
@@ -114,6 +118,7 @@ impl Volume {
         Err(Error::Guard("Empty file path"))
     }
 
+    /// Read a bounded token with one safe relative executable path.
     pub fn read_target<'buffer>(&self, buffer: &'buffer mut [u8; 1024]) -> Result<&'buffer CStr> {
         let descriptor = self.open_file(TOKEN, false)?;
         let mut used = 0;

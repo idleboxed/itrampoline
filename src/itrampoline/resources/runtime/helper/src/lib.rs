@@ -76,6 +76,7 @@ pub unsafe fn sanitize_inherited() -> Result<()> {
     Ok(())
 }
 
+/// Validate the SD target and exec its held application FD; inherited resources must already be sanitized.
 pub fn launch() -> Result<()> {
     let volume = Volume::open(CARD_ROOT)?;
     let mut buffer = [0u8; 1024];

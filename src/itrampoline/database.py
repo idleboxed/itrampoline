@@ -22,6 +22,7 @@ REQUIRED_COLUMNS = {
 
 
 def validate_schema(database: sqlite3.Connection) -> None:
+    """Reject stock databases whose tables or identifiers cannot be safely updated."""
 
     for table, required in REQUIRED_COLUMNS.items():
         schema = database.execute("SELECT type, sql FROM sqlite_master WHERE name = ?", (table,)).fetchone()
@@ -52,6 +53,7 @@ def validate_schema(database: sqlite3.Connection) -> None:
 
 
 def allocate_id(database: sqlite3.Connection, table: str, column: str) -> int:
+    """Choose the next positive identifier, rejecting invalid or exhausted values."""
     values = database.execute(f"SELECT \"{column}\" FROM \"{table}\"").fetchall()
     maximum = 0
 
@@ -67,6 +69,7 @@ def allocate_id(database: sqlite3.Connection, table: str, column: str) -> int:
 
 
 def insert_first(database: sqlite3.Connection, table: str, values: dict[str, object]) -> None:
+    """Insert a row before existing rowids without changing their contents."""
     minimum = database.execute(f"SELECT MIN(rowid) FROM \"{table}\"").fetchone()[0]
     rowid = min(0, minimum or 0) - 1
 
